@@ -13,32 +13,6 @@ SIE-Core is an Out-Of-Memory (OOM) prevention library designed to seamlessly sup
 
 Full API syntax is under development, but a basic example is shown below:
 
-```python
-from sie_core.core import monitor_memory_dask, monitor_memory_cupy, prevent_oom
-
-# Initialize SIE-Core with Dask
-monitor_memory_dask()
-
-# Your Dask workload code follows
-# For example:
-# client = Client()
-# future = client.submit(my_dask_function)
-# result = future.result()
-
-
-# Initialize SIE-Core with CuPy
-monitor_memory_cupy()
-
-# Your CuPy workload code follows
-# For example:
-# x_gpu = cp.array([1, 2, 3])
-# y_gpu = cp.sin(x_gpu)
-
-
-# The prevent_oom function will be triggered based on configured memory thresholds
-# (This is a conceptual example)
-prevent_oom()
-```
 
 ## Benchmark
 
