@@ -1,29 +1,41 @@
 # SIE-Core
 
-SIE-Core is an Out-Of-Memory (OOM) prevention library designed to seamlessly supplement [Dask](https://dask.org/) and [CuPy](https://cupy.dev/), making memory management smoother for large-scale Python data processing, distributed computation, and GPU acceleration.
+SIE-Core is a Python implementation of an e-graph library, inspired by [egg.rs](https://egraphs-good.github.io/). E-graphs are a powerful data structure for equality saturation, which can be used to build program optimizers, synthesizers, and verifiers.
 
 ## Features
 
-- **OOM Detection and Prevention:** Monitors memory usage during computations and prevents jobs from exhausting system or GPU memory.
-- **Integration with Dask and CuPy:** Works alongside Dask and CuPy, providing an extra safety layer for distributed and accelerated Python workflows.
-- **Customizable Policies:** Users can configure memory thresholds and responsive actions tailored to their workloads.
-- **Alerts and Logging:** Warns users or triggers callbacks/events when approaching OOM conditions.
+- **E-Graph Data Structure:** Efficiently represents many equivalent expressions.
+- **Congruence Closure:** Automatically maintains equivalences through rebuilding.
+- **Pattern Matching:** Search for sub-graphs using patterns with variables.
+- **Equality Saturation:** Apply rewrite rules until a fixed point is reached.
 
 ## Usage
 
-Full API syntax is under development, but a basic example is shown below:
+```python
+from sie_core import EGraph, ENode, Pattern, Rewrite, Runner
 
+# Create an e-graph
+eg = EGraph()
 
-## Benchmark
+# Add expressions: (a * 2) / 2
+a = eg.add(ENode("a", ()))
+two = eg.add(ENode("2", ()))
+mul = eg.add(ENode("*", (a, two)))
+div = eg.add(ENode("/", (mul, two)))
 
-_Benchmark results will be presented here. Template below can be filled in as results become available:_
+# Define rewrite rules
+# (x * y) / y -> x
+lhs = Pattern(("/", (Pattern(("*", (Pattern("?x"), Pattern("?y")))), Pattern("?y"))))
+rhs = Pattern("?x")
+rule = Rewrite("div-mul", lhs, rhs)
 
-| Library      | Workload Description | Memory Limit | OOM Prevented | Runtime (sec) | Notes         |
-|--------------|---------------------|--------------|---------------|---------------|---------------|
-| Dask         | [Description]        | [Limit]      | [Yes/No]      | [Time]        | [Comments]    |
-| CuPy         | [Description]        | [Limit]      | [Yes/No]      | [Time]        | [Comments]    |
+# Run equality saturation
+runner = Runner(eg)
+runner.run([rule])
 
-*This table will be updated with real data when available.*
+# Check equivalence
+assert eg.find(div) == eg.find(a)
+```
 
 ## Contributing
 
@@ -33,8 +45,3 @@ _Benchmark results will be presented here. Template below can be filled in as re
 ## License
 
 Distributed under the MIT License. See `LICENSE` for details.
-
-```
-# Additional placeholders for code samples, advanced usage, and troubleshooting.
-[Insert scenario/case code here]
-```
