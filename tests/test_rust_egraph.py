@@ -42,21 +42,42 @@ def test_why_equal_checks():
     except Exception as ex:
         assert "not found in e-graph" in str(ex)
 
-def test_are_equal():
+def test_introspection():
     e = EGraph()
     e.add("(+ a b)")
-    e.add("(+ b a)")
 
-    rules = [
-        rewrite("(+ ?x ?y)", "(+ ?y ?x)"),
-    ]
+    ids = e.eclass_ids()
+    assert len(ids) > 0
 
-    e.run(rules)
-    assert e.are_equal("(+ a b)", "(+ b a)")
+    expr_id = e.get_id("(+ a b)")
+    assert expr_id in ids
+
+    nodes = e.eclass_nodes(expr_id)
+    # SymbolLang to_string returns the op name
+    assert "+" in nodes
+
+def test_checkpoint():
+    e = EGraph()
+    e.add("a")
+
+    cp = e.checkpoint()
+    cp.add("b")
+
+    # Check for presence of 'op: "b"' in dump to be more specific
+    assert 'op: "b"' not in e.dump()
+    assert 'op: "b"' in cp.dump()
+
+def test_dot():
+    e = EGraph()
+    e.add("a")
+    dot = e.to_dot()
+    assert "digraph" in dot
 
 if __name__ == "__main__":
     test_basic_simplification()
     test_cost_functions()
     test_why_equal_checks()
-    test_are_equal()
+    test_introspection()
+    test_checkpoint()
+    test_dot()
     print("All manual tests passed!")

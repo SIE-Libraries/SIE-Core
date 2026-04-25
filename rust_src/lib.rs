@@ -19,6 +19,10 @@ struct RustEGraph {
     egraph: EGraph<SymbolLang, ()>,
 }
 
+fn parse_expr(expr: &str) -> PyResult<RecExpr<SymbolLang>> {
+    expr.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error: {}", e)))
+}
+
 #[pymethods]
 impl RustEGraph {
     #[new]
@@ -29,7 +33,7 @@ impl RustEGraph {
     }
 
     fn add(&mut self, expr: &str) -> PyResult<()> {
-        let parsed: RecExpr<SymbolLang> = expr.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error: {}", e)))?;
+        let parsed = parse_expr(expr)?;
         self.egraph.add_expr(&parsed);
         Ok(())
     }
@@ -71,7 +75,7 @@ impl RustEGraph {
     }
 
     fn extract(&self, expr: &str, cost: &str) -> PyResult<String> {
-        let parsed: RecExpr<SymbolLang> = expr.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error: {}", e)))?;
+        let parsed = parse_expr(expr)?;
         let id = self.egraph.lookup_expr(&parsed).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("Expression not found in e-graph"))?;
 
         match cost {
@@ -90,8 +94,8 @@ impl RustEGraph {
     }
 
     fn are_equal(&self, expr1: &str, expr2: &str) -> PyResult<bool> {
-        let parsed1: RecExpr<SymbolLang> = expr1.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error expr1: {}", e)))?;
-        let parsed2: RecExpr<SymbolLang> = expr2.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error expr2: {}", e)))?;
+        let parsed1 = parse_expr(expr1)?;
+        let parsed2 = parse_expr(expr2)?;
 
         let id1 = self.egraph.lookup_expr(&parsed1);
         let id2 = self.egraph.lookup_expr(&parsed2);
@@ -103,7 +107,7 @@ impl RustEGraph {
     }
 
     fn explain(&mut self, expr: &str) -> PyResult<String> {
-        let parsed: RecExpr<SymbolLang> = expr.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error: {}", e)))?;
+        let parsed = parse_expr(expr)?;
         let id = self.egraph.lookup_expr(&parsed).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("Expression not found in e-graph"))?;
 
         let mut explanation = self.egraph.explain_equivalence(&parsed, &self.egraph.id_to_expr(id));
@@ -111,10 +115,9 @@ impl RustEGraph {
     }
 
     fn why_equal(&mut self, a: &str, b: &str) -> PyResult<String> {
-        let parsed_a: RecExpr<SymbolLang> = a.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error a: {}", e)))?;
-        let parsed_b: RecExpr<SymbolLang> = b.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error b: {}", e)))?;
+        let parsed_a = parse_expr(a)?;
+        let parsed_b = parse_expr(b)?;
 
-        // Ensure both expressions are present in the EGraph
         let id_a = self.egraph.lookup_expr(&parsed_a).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Expression '{}' not found in e-graph", a)))?;
         let id_b = self.egraph.lookup_expr(&parsed_b).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Expression '{}' not found in e-graph", b)))?;
 
@@ -135,6 +138,36 @@ impl RustEGraph {
 
     fn dump(&self) -> PyResult<String> {
         Ok(format!("{:?}", self.egraph))
+    }
+
+    fn to_dot(&self) -> String {
+        self.egraph.dot().to_string()
+    }
+
+    fn clone_egraph(&self) -> Self {
+        RustEGraph {
+            egraph: self.egraph.clone(),
+        }
+    }
+
+    fn get_eclass_ids(&self) -> Vec<usize> {
+        self.egraph.classes().map(|c| usize::from(c.id)).collect()
+    }
+
+    fn get_eclass_nodes(&self, id: usize) -> Vec<String> {
+        let class = &self.egraph[Id::from(id)];
+        class.nodes.iter().map(|n| n.to_string()).collect()
+    }
+
+    fn rebuild(&mut self) {
+        self.egraph.rebuild();
+    }
+
+    fn get_id(&self, expr: &str) -> PyResult<usize> {
+        let parsed = parse_expr(expr)?;
+        let id = self.egraph.lookup_expr(&parsed)
+            .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("Expression not found"))?;
+        Ok(usize::from(id))
     }
 }
 

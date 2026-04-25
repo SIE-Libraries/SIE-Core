@@ -23,13 +23,16 @@ except ImportError:
             sie_core_rust = None
 
 class EGraph:
-    def __init__(self):
+    def __init__(self, _inner=None):
         if sie_core_rust is None:
             raise ImportError(
                 "sie_core_rust extension not found. "
                 "Ensure the package is installed correctly (e.g., via `pip install .`)."
             )
-        self._egraph = sie_core_rust.RustEGraph()
+        if _inner:
+            self._egraph = _inner
+        else:
+            self._egraph = sie_core_rust.RustEGraph()
 
     def add(self, expr: str) -> None:
         self._egraph.add(expr)
@@ -78,6 +81,30 @@ class EGraph:
 
     def dump(self) -> str:
         return self._egraph.dump()
+
+    def to_dot(self) -> str:
+        """Returns the Graphviz representation of the EGraph."""
+        return self._egraph.to_dot()
+
+    def checkpoint(self) -> 'EGraph':
+        """Creates a clone of the current EGraph."""
+        return EGraph(_inner=self._egraph.clone_egraph())
+
+    def eclass_ids(self) -> List[int]:
+        """Returns a list of all e-class IDs."""
+        return self._egraph.get_eclass_ids()
+
+    def eclass_nodes(self, class_id: int) -> List[str]:
+        """Returns a list of all nodes in a given e-class."""
+        return self._egraph.get_eclass_nodes(class_id)
+
+    def rebuild(self) -> None:
+        """Manually triggers a rebuild of the EGraph."""
+        self._egraph.rebuild()
+
+    def get_id(self, expr: str) -> int:
+        """Returns the internal ID of an expression."""
+        return self._egraph.get_id(expr)
 
 class RewriteRule:
     def __init__(self, name: str, lhs: str, rhs: str):
