@@ -1,3 +1,11 @@
-from .egraph import EGraph, ENode, EClass, Pattern, Rewrite, Runner
+try:
+    from . import sie_core_rust
+except ImportError:
+    sie_core_rust = None
 
-__all__ = ["EGraph", "ENode", "EClass", "Pattern", "Rewrite", "Runner"]
+try:
+    from .egraph import EGraph, rewrite
+except ImportError:
+    from egraph import EGraph, rewrite
+
+__all__ = ["EGraph", "rewrite", "sie_core_rust"]

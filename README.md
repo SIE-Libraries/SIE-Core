@@ -1,46 +1,55 @@
 # SIE-Core
 
-SIE-Core is a Python implementation of an e-graph library, inspired by [egg.rs](https://egraphs-good.github.io/). E-graphs are a powerful data structure for equality saturation, which can be used to build program optimizers, synthesizers, and verifiers.
+SIE-Core is a high-performance Python e-graph library powered by Rust and [egg.rs](https://egraphs-good.github.io/).
 
 ## Features
 
-- **E-Graph Data Structure:** Efficiently represents many equivalent expressions.
-- **Congruence Closure:** Automatically maintains equivalences through rebuilding.
-- **Pattern Matching:** Search for sub-graphs using patterns with variables.
-- **Equality Saturation:** Apply rewrite rules until a fixed point is reached.
+- **Rust Backend:** Leverages the power of `egg.rs` for efficient e-graph operations.
+- **Pythonic API:** Simple and intuitive interface for Python users.
+- **Equality Saturation:** Automatically find the best version of an expression based on rewrite rules.
+- **Extraction:** Retrieve the optimized expression with minimal cost.
+
+## Installation
+
+```bash
+pip install .
+```
 
 ## Usage
 
 ```python
-from sie_core import EGraph, ENode, Pattern, Rewrite, Runner
+from sie_core import EGraph, rewrite
 
-# Create an e-graph
-eg = EGraph()
+e = EGraph()
 
-# Add expressions: (a * 2) / 2
-a = eg.add(ENode("a", ()))
-two = eg.add(ENode("2", ()))
-mul = eg.add(ENode("*", (a, two)))
-div = eg.add(ENode("/", (mul, two)))
+# Add expressions (prefix notation)
+e.add("(+ a 0)")
+e.add("(+ 0 a)")
 
 # Define rewrite rules
-# (x * y) / y -> x
-lhs = Pattern(("/", (Pattern(("*", (Pattern("?x"), Pattern("?y")))), Pattern("?y"))))
-rhs = Pattern("?x")
-rule = Rewrite("div-mul", lhs, rhs)
+rules = [
+    rewrite("(+ ?x 0)", "?x"),
+    rewrite("(+ 0 ?x)", "?x"),
+]
 
 # Run equality saturation
-runner = Runner(eg)
-runner.run([rule])
+e.run(rules)
 
-# Check equivalence
-assert eg.find(div) == eg.find(a)
+# Extract the best expression
+print(e.best("(+ a 0)"))  # Output: a
 ```
 
-## Contributing
+## API Reference
 
-- Fork the repo and submit a pull request.
-- All contributions, bug reports, and feature requests are welcome!
+### `EGraph`
+- `add(expr: str)`: Add an expression in prefix notation.
+- `run(rules: list, iterations: int = None)`: Run equality saturation.
+- `best(expr: str) -> str`: Get the best equivalent expression.
+- `stats() -> dict`: Get execution statistics.
+- `dump() -> str`: Get a debug dump of the e-graph.
+
+### `rewrite(lhs: str, rhs: str, name: str = None)`
+- Creates a rewrite rule from a left-hand side pattern to a right-hand side pattern.
 
 ## License
 
