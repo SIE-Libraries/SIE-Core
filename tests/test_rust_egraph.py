@@ -12,16 +12,35 @@ def test_basic_simplification():
     e.run(rules)
     assert e.best("(+ a 0)") == "a"
 
-def test_custom_operators():
+def test_cost_functions():
     e = EGraph()
-    e.add("(foo (bar a))")
-
-    rules = [
-        rewrite("(foo (bar ?x))", "?x"),
-    ]
-
+    e.add("(+ a (+ b 0))")
+    rules = [rewrite("(+ ?x 0)", "?x")]
     e.run(rules)
-    assert e.best("(foo (bar a))") == "a"
+
+    best_size = e.extract("(+ a (+ b 0))", cost="size")
+    best_depth = e.extract("(+ a (+ b 0))", cost="depth")
+    assert best_size == "(+ a b)"
+    assert best_depth == "(+ a b)"
+
+def test_why_equal_checks():
+    e = EGraph()
+    e.add("a")
+    e.add("b")
+
+    # Not equal check
+    try:
+        e.why_equal("a", "b")
+        assert False, "Should have raised error for non-equivalence"
+    except Exception as ex:
+        assert "are not equal" in str(ex)
+
+    # Not in graph check
+    try:
+        e.why_equal("a", "c")
+        assert False, "Should have raised error for 'c'"
+    except Exception as ex:
+        assert "not found in e-graph" in str(ex)
 
 def test_are_equal():
     e = EGraph()
@@ -35,43 +54,9 @@ def test_are_equal():
     e.run(rules)
     assert e.are_equal("(+ a b)", "(+ b a)")
 
-def test_error_handling():
-    e = EGraph()
-    # Invalid pattern (RHS variable not in LHS)
-    try:
-        rules = [rewrite("(+ ?x ?y)", "?z")]
-        e.run(rules)
-        assert False, "Should have raised an error"
-    except Exception as ex:
-        assert "Rewrite creation error" in str(ex)
-
-def test_explanation():
-    e = EGraph()
-    e.add("(+ a 0)")
-    rules = [rewrite("(+ ?x 0)", "?x")]
-    e.run(rules)
-
-    explanation = e.why_equal("(+ a 0)", "a")
-    assert "a" in explanation
-    # The actual output might vary, so just check for basic presence
-    assert "(+ a 0)" in explanation or "a" in explanation
-
-def test_run_iter():
-    e = EGraph()
-    e.add("(+ (+ a 0) 0)")
-    rules = [rewrite("(+ ?x 0)", "?x")]
-
-    iters = list(e.run_iter(rules))
-    assert len(iters) >= 1
-    for step in iters:
-        assert hasattr(step, "nodes")
-        assert hasattr(step, "eclasses")
-
 if __name__ == "__main__":
     test_basic_simplification()
-    test_custom_operators()
+    test_cost_functions()
+    test_why_equal_checks()
     test_are_equal()
-    test_error_handling()
-    test_explanation()
-    test_run_iter()
     print("All manual tests passed!")

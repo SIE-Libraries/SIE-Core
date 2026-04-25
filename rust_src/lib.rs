@@ -1,4 +1,5 @@
 use pyo3::prelude::*;
+use pyo3::types::PyModule;
 use egg::*;
 use std::collections::HashMap;
 
@@ -33,6 +34,7 @@ impl RustEGraph {
         Ok(())
     }
 
+    #[pyo3(signature = (rules, iterations=None))]
     fn run(&mut self, rules: Vec<(String, String, String)>, iterations: Option<usize>) -> PyResult<Vec<PyIteration>> {
         let mut rewrites = Vec::new();
         for (name, lhs, rhs) in rules {
@@ -65,17 +67,26 @@ impl RustEGraph {
     }
 
     fn best(&self, expr: &str) -> PyResult<String> {
+        self.extract(expr, "size")
+    }
+
+    fn extract(&self, expr: &str, cost: &str) -> PyResult<String> {
         let parsed: RecExpr<SymbolLang> = expr.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error: {}", e)))?;
         let id = self.egraph.lookup_expr(&parsed).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("Expression not found in e-graph"))?;
 
-        let extractor = Extractor::new(&self.egraph, AstSize);
-        let (_cost, best) = extractor.find_best(id);
-        Ok(best.to_string())
-    }
-
-    fn extract(&self, expr: &str, _cost: &str) -> PyResult<String> {
-        // Future: support different cost functions based on _cost string
-        self.best(expr)
+        match cost {
+            "size" => {
+                let extractor = Extractor::new(&self.egraph, AstSize);
+                let (_cost, best) = extractor.find_best(id);
+                Ok(best.to_string())
+            }
+            "depth" => {
+                let extractor = Extractor::new(&self.egraph, AstDepth);
+                let (_cost, best) = extractor.find_best(id);
+                Ok(best.to_string())
+            }
+            _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Unknown cost function: {}", cost)))
+        }
     }
 
     fn are_equal(&self, expr1: &str, expr2: &str) -> PyResult<bool> {
@@ -103,6 +114,14 @@ impl RustEGraph {
         let parsed_a: RecExpr<SymbolLang> = a.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error a: {}", e)))?;
         let parsed_b: RecExpr<SymbolLang> = b.parse().map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Parse error b: {}", e)))?;
 
+        // Ensure both expressions are present in the EGraph
+        let id_a = self.egraph.lookup_expr(&parsed_a).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Expression '{}' not found in e-graph", a)))?;
+        let id_b = self.egraph.lookup_expr(&parsed_b).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Expression '{}' not found in e-graph", b)))?;
+
+        if id_a != id_b {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Expressions '{}' and '{}' are not equal in the e-graph", a, b)));
+        }
+
         let mut explanation = self.egraph.explain_equivalence(&parsed_a, &parsed_b);
         Ok(explanation.get_flat_string())
     }
@@ -120,7 +139,7 @@ impl RustEGraph {
 }
 
 #[pymodule]
-fn sie_core_rust(_py: Python, m: &PyModule) -> PyResult<()> {
+fn sie_core_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<RustEGraph>()?;
     m.add_class::<PyIteration>()?;
     Ok(())

@@ -41,8 +41,9 @@ class EGraph:
     def run_iter(self, rules: List['RewriteRule'], iterations: int = 10) -> Iterator[Any]:
         """Runs rewrite rules iteration by iteration."""
         for _ in range(iterations):
-            prev_nodes = self.stats()["nodes"]
-            prev_classes = self.stats()["classes"]
+            prev_stats = self.stats()
+            prev_nodes = prev_stats["nodes"]
+            prev_classes = prev_stats["classes"]
 
             step_info = self.run(rules, iterations=1)
             if not step_info:
@@ -56,12 +57,12 @@ class EGraph:
                 break
 
     def extract(self, expr: str, cost: str = "size") -> str:
-        """Return best equivalent expression according to cost function."""
+        """Return best equivalent expression according to cost function ('size' or 'depth')."""
         return self._egraph.extract(expr, cost)
 
-    def best(self, expr: str) -> str:
-        """Alias for extract with default cost."""
-        return self.extract(expr, cost="size")
+    def best(self, expr: str, cost: str = "size") -> str:
+        """Alias for extract."""
+        return self.extract(expr, cost=cost)
 
     def are_equal(self, expr1: str, expr2: str) -> bool:
         return self._egraph.are_equal(expr1, expr2)
