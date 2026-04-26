@@ -32,13 +32,14 @@ impl RustEGraph {
         }
     }
 
+    #[pyo3(text_signature = "($self, expr)")]
     fn add(&mut self, expr: &str) -> PyResult<()> {
         let parsed = parse_expr(expr)?;
         self.egraph.add_expr(&parsed);
         Ok(())
     }
 
-    #[pyo3(signature = (rules, iterations=None))]
+    #[pyo3(signature = (rules, iterations=None), text_signature = "($self, rules, iterations=None)")]
     fn run(&mut self, rules: Vec<(String, String, String)>, iterations: Option<usize>) -> PyResult<Vec<PyIteration>> {
         let mut rewrites = Vec::new();
         for (name, lhs, rhs) in rules {
@@ -70,10 +71,12 @@ impl RustEGraph {
         Ok(py_iterations)
     }
 
+    #[pyo3(text_signature = "($self, expr)")]
     fn best(&self, expr: &str) -> PyResult<String> {
         self.extract(expr, "size")
     }
 
+    #[pyo3(text_signature = "($self, expr, cost)")]
     fn extract(&self, expr: &str, cost: &str) -> PyResult<String> {
         let parsed = parse_expr(expr)?;
         let id = self.egraph.lookup_expr(&parsed).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("Expression not found in e-graph"))?;
@@ -93,6 +96,7 @@ impl RustEGraph {
         }
     }
 
+    #[pyo3(text_signature = "($self, expr1, expr2)")]
     fn are_equal(&self, expr1: &str, expr2: &str) -> PyResult<bool> {
         let parsed1 = parse_expr(expr1)?;
         let parsed2 = parse_expr(expr2)?;
@@ -106,6 +110,7 @@ impl RustEGraph {
         }
     }
 
+    #[pyo3(text_signature = "($self, expr)")]
     fn explain(&mut self, expr: &str) -> PyResult<String> {
         let parsed = parse_expr(expr)?;
         let id = self.egraph.lookup_expr(&parsed).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("Expression not found in e-graph"))?;
@@ -114,6 +119,7 @@ impl RustEGraph {
         Ok(explanation.get_flat_string())
     }
 
+    #[pyo3(text_signature = "($self, a, b)")]
     fn why_equal(&mut self, a: &str, b: &str) -> PyResult<String> {
         let parsed_a = parse_expr(a)?;
         let parsed_b = parse_expr(b)?;
@@ -129,6 +135,7 @@ impl RustEGraph {
         Ok(explanation.get_flat_string())
     }
 
+    #[pyo3(text_signature = "($self)")]
     fn stats(&self) -> PyResult<HashMap<String, usize>> {
         let mut stats = HashMap::new();
         stats.insert("nodes".to_string(), self.egraph.total_size());
@@ -136,33 +143,40 @@ impl RustEGraph {
         Ok(stats)
     }
 
+    #[pyo3(text_signature = "($self)")]
     fn dump(&self) -> PyResult<String> {
         Ok(format!("{:?}", self.egraph))
     }
 
+    #[pyo3(text_signature = "($self)")]
     fn to_dot(&self) -> String {
         self.egraph.dot().to_string()
     }
 
+    #[pyo3(text_signature = "($self)")]
     fn clone_egraph(&self) -> Self {
         RustEGraph {
             egraph: self.egraph.clone(),
         }
     }
 
+    #[pyo3(text_signature = "($self)")]
     fn get_eclass_ids(&self) -> Vec<usize> {
         self.egraph.classes().map(|c| usize::from(c.id)).collect()
     }
 
+    #[pyo3(text_signature = "($self, id)")]
     fn get_eclass_nodes(&self, id: usize) -> Vec<String> {
         let class = &self.egraph[Id::from(id)];
         class.nodes.iter().map(|n| n.to_string()).collect()
     }
 
+    #[pyo3(text_signature = "($self)")]
     fn rebuild(&mut self) {
         self.egraph.rebuild();
     }
 
+    #[pyo3(text_signature = "($self, expr)")]
     fn get_id(&self, expr: &str) -> PyResult<usize> {
         let parsed = parse_expr(expr)?;
         let id = self.egraph.lookup_expr(&parsed)
