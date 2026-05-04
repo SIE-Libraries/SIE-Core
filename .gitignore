@@ -40,6 +40,9 @@
 # debug information files
 *.dwo
 
+# Rust
+target/
+
 # Python
 # Byte-compiled / optimized / DLL files
 __pycache__/

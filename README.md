@@ -1,40 +1,56 @@
 # SIE-Core
 
-SIE-Core is an Out-Of-Memory (OOM) prevention library designed to seamlessly supplement [Dask](https://dask.org/) and [CuPy](https://cupy.dev/), making memory management smoother for large-scale Python data processing, distributed computation, and GPU acceleration.
+SIE-Core is a high-performance Python e-graph library powered by Rust and [egg.rs](https://egraphs-good.github.io/).
 
 ## Features
 
-- **OOM Detection and Prevention:** Monitors memory usage during computations and prevents jobs from exhausting system or GPU memory.
-- **Integration with Dask and CuPy:** Works alongside Dask and CuPy, providing an extra safety layer for distributed and accelerated Python workflows.
-- **Customizable Policies:** Users can configure memory thresholds and responsive actions tailored to their workloads.
-- **Alerts and Logging:** Warns users or triggers callbacks/events when approaching OOM conditions.
+- **Rust Backend:** Leverages the power of `egg.rs` for efficient e-graph operations.
+- **Pythonic API:** Simple and intuitive interface for Python users.
+- **Equality Saturation:** Automatically find the best version of an expression based on rewrite rules.
+- **Extraction:** Retrieve the optimized expression with minimal cost.
+
+## Installation
+
+```bash
+pip install .
+```
 
 ## Usage
 
-Full API syntax is under development, but a basic example is shown below:
+```python
+from sie_core import EGraph, rewrite
 
+e = EGraph()
 
-## Benchmark
+# Add expressions (prefix notation)
+e.add("(+ a 0)")
+e.add("(+ 0 a)")
 
-_Benchmark results will be presented here. Template below can be filled in as results become available:_
+# Define rewrite rules
+rules = [
+    rewrite("(+ ?x 0)", "?x"),
+    rewrite("(+ 0 ?x)", "?x"),
+]
 
-| Library      | Workload Description | Memory Limit | OOM Prevented | Runtime (sec) | Notes         |
-|--------------|---------------------|--------------|---------------|---------------|---------------|
-| Dask         | [Description]        | [Limit]      | [Yes/No]      | [Time]        | [Comments]    |
-| CuPy         | [Description]        | [Limit]      | [Yes/No]      | [Time]        | [Comments]    |
+# Run equality saturation
+e.run(rules)
 
-*This table will be updated with real data when available.*
+# Extract the best expression
+print(e.best("(+ a 0)"))  # Output: a
+```
 
-## Contributing
+## API Reference
 
-- Fork the repo and submit a pull request.
-- All contributions, bug reports, and feature requests are welcome!
+### `EGraph`
+- `add(expr: str)`: Add an expression in prefix notation.
+- `run(rules: list, iterations: int = None)`: Run equality saturation.
+- `best(expr: str) -> str`: Get the best equivalent expression.
+- `stats() -> dict`: Get execution statistics.
+- `dump() -> str`: Get a debug dump of the e-graph.
+
+### `rewrite(lhs: str, rhs: str, name: str = None)`
+- Creates a rewrite rule from a left-hand side pattern to a right-hand side pattern.
 
 ## License
 
 Distributed under the MIT License. See `LICENSE` for details.
-
-```
-# Additional placeholders for code samples, advanced usage, and troubleshooting.
-[Insert scenario/case code here]
-```

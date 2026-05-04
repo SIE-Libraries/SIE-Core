@@ -1,0 +1,14 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "sie-core"
+version = "0.1.0"
+description = "Python E-Graph Library (Rust + PyO3)"
+authors = [{name = "Jules"}]
+dependencies = []
+
+[tool.maturin]
+module-name = "sie_core.sie_core_rust"
+python-source = "src"
